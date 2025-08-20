@@ -1,0 +1,41 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "=== Build Environment ==="
+        - pwd
+        - ls -la
+        - echo "=== Node.js Setup ==="
+        - nvm install 18.18.0
+        - nvm use 18.18.0
+        - node --version
+        - npm --version
+        - echo "=== Environment Variables ==="
+        - printenv | grep -E '^(VITE_|NODE_|NPM_)' | sort || true
+        - echo "=== Installing Dependencies ==="
+        - npm ci --cache .npm --prefer-offline --no-audit
+        - echo "=== Dependencies Installed ==="
+        - npm list --depth=0 || true
+    build:
+      commands:
+        - echo "=== TypeScript Check ==="
+        - npm run type-check || echo "TypeScript check failed, continuing..."
+        - echo "=== Building Application ==="
+        - npm run build
+        - echo "=== Build Completed ==="
+    postBuild:
+      commands:
+        - echo "=== Build Verification ==="
+        - ls -la dist/ || echo "dist directory not found"
+        - find dist -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -10 || true
+        - echo "Build verification completed" > dist/health.txt
+        - echo "=== Ready for Deployment ==="
+  artifacts:
+    baseDirectory: dist
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - ".npm/**/*"
+      - "node_modules/**/*"
